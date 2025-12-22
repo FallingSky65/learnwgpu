@@ -119,7 +119,7 @@ pub struct State {
 
     render_pipeline: wgpu::RenderPipeline,
 
-    obj_model: model::Model,
+    // obj_model: model::Model,
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
 
@@ -299,7 +299,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[model::ModelVertex::desc(), InstanceRaw::desc()],
+                buffers: &[minecraft::MCVertex::desc(), InstanceRaw::desc()],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -337,9 +337,11 @@ impl State {
             cache: None,
         });
 
+        /*
         let obj_model = resources::load_glb("fox.glb", &device, &queue, &texture_bind_group_layout)
             .await
             .unwrap();
+         */
         /*
         let model_texture = resources::load_texture("godot_plush_albedo.png", &device, &queue)
             .await
@@ -413,7 +415,7 @@ impl State {
 
             render_pipeline,
 
-            obj_model,
+            // obj_model,
             instances,
             instance_buffer,
 

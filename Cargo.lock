@@ -1353,6 +1353,7 @@ dependencies = [
  "image",
  "instant",
  "log",
+ "num_enum",
  "pollster",
  "reqwest",
  "tobj",
