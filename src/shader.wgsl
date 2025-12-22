@@ -61,31 +61,27 @@ const texcoord_lookup: array<vec2<f32>, 24> = array(
     vec2<f32>(0.0, 0.0),
 );
 
-const texcoord_offset_lookup: array<array<vec2<f32>, 6>, 3> = array(
-    array(
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(0.0, 0.0),
-    ),
-    array(
-        vec2<f32>(1.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(1.0, 0.0),
-        vec2<f32>(1.0, 0.0),
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(1.0, 0.0),
-    ),
-    array(
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-    ),
+const texcoord_offset_lookup: array<vec2<f32>, 6*3> = array(
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+
+    vec2<f32>(1.0, 0.0),
+    vec2<f32>(2.0, 0.0),
+    vec2<f32>(1.0, 0.0),
+    vec2<f32>(1.0, 0.0),
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(1.0, 0.0),
+
+    vec2<f32>(2.0, 0.0),
+    vec2<f32>(2.0, 0.0),
+    vec2<f32>(2.0, 0.0),
+    vec2<f32>(2.0, 0.0),
+    vec2<f32>(2.0, 0.0),
+    vec2<f32>(2.0, 0.0),
 );
 
 @vertex
@@ -109,7 +105,7 @@ fn vs_main(
   var out: VertexOutput;
   // out.tex_coords = model.tex_coords;
   out.tex_coords = texcoord_lookup[vertex_id];
-  out.tex_coords += texcoord_offset_lookup[block_id][face_id];
+  out.tex_coords += texcoord_offset_lookup[block_id * 6 + face_id];
   out.tex_coords.x /= 3.0;
   out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
   return out;
