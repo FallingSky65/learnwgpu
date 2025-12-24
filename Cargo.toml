@@ -13,6 +13,7 @@ anyhow = "1.0.100"
 bytemuck = { version = "1.24.0", features = [ "derive" ] }
 cgmath = "0.18.0"
 env_logger = "0.11.8"
+fastnoise-lite = "1.1.1"
 gltf = "1.4.1"
 instant = "0.1.13"
 log = "0.4.29"

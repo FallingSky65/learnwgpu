@@ -7,7 +7,7 @@ mod texture;
 use gltf::{Glb, Gltf};
 use model::Vertex;
 
-use std::{fs, sync::Arc};
+use std::{cmp::min, fs, sync::Arc};
 
 use wgpu::util::DeviceExt;
 use winit::{
@@ -120,7 +120,8 @@ pub struct State {
     render_pipeline: wgpu::RenderPipeline,
 
     // obj_model: model::Model,
-    instances: Vec<Instance>,
+    // instances: Vec<Instance>,
+    instance: Instance,
     instance_buffer: wgpu::Buffer,
 
     diffuse_bind_group: wgpu::BindGroup,
@@ -142,6 +143,9 @@ pub struct State {
 impl State {
     pub async fn new(window: Arc<Window>) -> anyhow::Result<State> {
         let size = window.inner_size();
+        let aspect: f32 = size.height as f32 / size.width as f32;
+        let width = min(size.width, 2048);
+        let height = (width as f32 * aspect).floor() as u32;
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
@@ -187,8 +191,8 @@ impl State {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: size.width,
-            height: size.height,
+            width: width,
+            height: height,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
@@ -240,10 +244,10 @@ impl State {
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
-        let camera = camera::Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
+        let camera = camera::Camera::new((0.0, 64.0, 0.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
         let projection =
             camera::Projection::new(config.width, config.height, cgmath::Deg(45.0), 0.1, 100.0);
-        let camera_controller = camera::CameraController::new(4.0, 0.4);
+        let camera_controller = camera::CameraController::new(16.0, 0.4);
 
         let mut camera_uniform = CameraUniform::new();
         camera_uniform.update_view_proj(&camera, &projection);
@@ -368,6 +372,7 @@ impl State {
         });
         */
 
+        /*
         const SPACE_BETWEEN: f32 = 3.0;
         let instances = (0..NUM_INSTANCES_PER_ROW)
             .flat_map(|z| {
@@ -392,17 +397,33 @@ impl State {
             .collect::<Vec<_>>();
 
         let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        */
+
+        let instance = Instance {
+            position: cgmath::Vector3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            rotation: cgmath::Quaternion::from_axis_angle(
+                cgmath::Vector3::unit_z(),
+                cgmath::Deg(0.0),
+            ),
+        };
+        let instance_data = [instance.to_raw()];
+
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&instance_data),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let world = minecraft::World::new(&device, &queue, &texture_bind_group_layout)
+        let mut world = minecraft::World::new(&device, &queue, &texture_bind_group_layout)
             .await
             .unwrap();
-        let chunk = world.gen_chunk(0, 0, 0);
-        chunk.lock().unwrap().gen_mesh(&device);
+        world.update(&device, &camera);
+        //let chunk = world.gen_chunk(0, 0, 0);
+        //chunk.lock().unwrap().gen_mesh(&device);
         let world_model = world.get_model();
 
         Ok(Self {
@@ -416,7 +437,8 @@ impl State {
             render_pipeline,
 
             // obj_model,
-            instances,
+            // instances,
+            instance,
             instance_buffer,
 
             diffuse_bind_group,
@@ -438,6 +460,9 @@ impl State {
 
     pub fn resize(&mut self, width: u32, height: u32) {
         if width > 0 && height > 0 {
+            let aspect: f32 = height as f32 / width as f32;
+            let width = min(width, 2048);
+            let height = (width as f32 * aspect).floor() as u32;
             self.projection.resize(width, height);
             self.config.width = width;
             self.config.height = height;
@@ -477,6 +502,9 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
+
+        self.world.update(&self.device, &self.camera);
+        self.world_model = self.world.get_model();
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -530,11 +558,14 @@ impl State {
             use model::DrawModel;
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.draw_model(&self.world_model, &self.camera_bind_group);
+            /*
             render_pass.draw_model_instanced(
                 &self.world_model,
                 0..self.instances.len() as u32,
                 &self.camera_bind_group,
             );
+            */
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -572,7 +603,8 @@ impl ApplicationHandler<State> for App {
 
         #[cfg(not(target_arch = "wasm32"))]
         #[allow(unused_mut)]
-        let mut window_attributes = Window::default_attributes().with_resizable(false);
+        //let mut window_attributes = Window::default_attributes().with_resizable(false);
+        let mut window_attributes = Window::default_attributes();
 
         #[cfg(target_arch = "wasm32")]
         {
